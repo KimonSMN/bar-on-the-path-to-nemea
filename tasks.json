@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Thread Program",
+      "type": "shell",
+      "command": "gcc",
+      "args": ["-pthread", "-o", "threads", "threads.c"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}
