@@ -49,5 +49,11 @@ int main(int argc, char* argv[]) {
     // Initialize shared memory
     memset(shm_ptr, 0, SHM_SIZE);
 
+    // for (int table = 0; table < NUM_TABLES; table++){
+    //     for(int chair = 0; chair < CHAIRS_PER_TABLE; chair++){
+    //         shm_ptr->tables[table].chairs[chair].occupied_by_pid = 0;
+    //     }
+    // } 
+
     return 0;
 }

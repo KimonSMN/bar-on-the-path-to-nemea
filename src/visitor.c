@@ -10,6 +10,20 @@
 #define SHM_NAME "/shared_memory"
 #define SHM_SIZE sizeof(SharedMemory)
 
+int check_for_chair(SharedMemory* shm_ptr){
+    for (int table = 0; table < NUM_TABLES; table++){
+        for(int chair = 0; chair < CHAIRS_PER_TABLE; chair++){
+            if(shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0){
+                int id = shm_ptr->tables[table].chairs[chair].occupied_by_pid = getpid();
+                printf("Process ID: %d\n", id);
+                return 1;
+            }
+        }
+    } 
+    return 0;
+}
+
+
 int main(int argc, char* argv[]){
 
   //////// HANDLE COMMAND LINE ARGUMENTS ////////
@@ -53,6 +67,15 @@ int main(int argc, char* argv[]){
     printf("resttime: %d\n", resttime);
     printf("shmid: %s\n", shmid);
 
-
     // Check if there is empty chair at table
+
+    for (int table = 0; table < NUM_TABLES; table++){
+        for(int chair = 0; chair < CHAIRS_PER_TABLE; chair++){
+            int id = shm_ptr->tables[table].chairs[chair].occupied_by_pid;
+            printf("Process ID: %d\n", id);
+        }
+    }
+
+    printf("%d\n", check_for_chair(shm_ptr));
+
 }
