@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "shared_memory.h"
 
@@ -85,6 +86,36 @@ int main(int argc, char* argv[]){
 
     printf("Visitor %d: Seated at table %d, chair %d.\n", getpid(), found_table, found_chair);
 
+    // Orders from the menu
+
+    VisitorOrder order = {0};
+
+    srand(time(NULL) + getpid());
+
+    int get_both, option;
+    get_both = rand() % 2;
+    if(get_both == 1){ // Get both
+        order.orders[WATER] = 1;
+        order.orders[WINE] = 1;
+    } else{ // Don't get both
+        option = rand() % 2;
+        if(option == 1){ // Get Water
+            order.orders[WATER] = 1;
+            order.orders[WINE] = 0;
+        } else{ // Get Wine
+            order.orders[WATER] = 0;
+            order.orders[WINE] = 1;
+        } 
+    }
+    order.orders[CHEESE] = rand() % 2;  // Get Cheese
+    order.orders[SALAD] = rand() % 2;   // Get Salad
+
+    printf("Visitor %d ordered: Water=%d, Wine=%d, Cheese=%d, Salad=%d\n",
+       getpid(), order.orders[WATER], order.orders[WINE], 
+       order.orders[CHEESE], order.orders[SALAD]);
+
+
+    // Visitor leaves after resttime
     printf("Visitor %d: Resting for %d seconds...\n", getpid(), resttime);
     sleep(resttime);
 

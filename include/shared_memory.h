@@ -9,6 +9,7 @@
 // Bar Constants
 #define NUM_TABLES 1
 #define CHAIRS_PER_TABLE 2
+#define NUM_MENU_ITEMS 4
 
 typedef struct{
     int occupied_by_pid; // PID of the visitor occupying the chair (0 = unoccupied)
@@ -23,13 +24,18 @@ typedef struct{
 typedef struct {
     Table tables[NUM_TABLES];  // Array of tables
     int total_visitors;        // Total number of visitors so far
+    int product_stats[NUM_MENU_ITEMS]; // Total consumption of each menu item
+
 } SharedMemory;
 
-// enum Food {
-    
-// };
+typedef enum {
+    WATER = 0,
+    WINE = 1,
+    CHEESE = 2,
+    SALAD = 3
+} MenuItem;
 
-// enum Drink{
-
-// };
+typedef struct {
+    int orders[NUM_MENU_ITEMS]; // Quantity of each menu item ordered by the visitor
+} VisitorOrder;
 #endif
