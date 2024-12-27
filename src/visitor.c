@@ -10,20 +10,20 @@
 #define SHM_NAME "/shared_memory"
 #define SHM_SIZE sizeof(SharedMemory)
 
-int check_for_chair(SharedMemory* shm_ptr){
-    for (int table = 0; table < NUM_TABLES; table++){
-        for(int chair = 0; chair < CHAIRS_PER_TABLE; chair++){
-            if(shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0){
-                int id = shm_ptr->tables[table].chairs[chair].occupied_by_pid = getpid();
-                printf("Process ID: %d\n", id);
-                return 1;
+int check_for_chair(SharedMemory* shm_ptr, int* found_table, int* found_chair) {
+    for (int table = 0; table < NUM_TABLES; table++) {
+        for (int chair = 0; chair < CHAIRS_PER_TABLE; chair++) {
+            if (shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0) {
+                shm_ptr->tables[table].chairs[chair].occupied_by_pid = getpid(); // Occupy chair
+                shm_ptr->total_visitors++;
+                *found_table = table;
+                *found_chair = chair;
+                return 1; // Chair found
             }
         }
-    } 
-    return 0;
+    }
+    return 0; // No chair found
 }
-
-
 int main(int argc, char* argv[]){
 
   //////// HANDLE COMMAND LINE ARGUMENTS ////////
@@ -64,18 +64,33 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    printf("resttime: %d\n", resttime);
-    printf("shmid: %s\n", shmid);
+    // printf("resttime: %d\n", resttime);
+    // printf("shmid: %s\n", shmid);
 
     // Check if there is empty chair at table
+    // prints the tables
+    // for (int table = 0; table < NUM_TABLES; table++){
+    //     printf("Table %d: \n", table);
+    //     for(int chair = 0; chair < CHAIRS_PER_TABLE; chair++){
+    //         printf("Chair %d: ", chair);
+    //         printf("Process ID: %d\n", shm_ptr->tables[table].chairs[chair].occupied_by_pid);
+    //     }
+    // }
 
-    for (int table = 0; table < NUM_TABLES; table++){
-        for(int chair = 0; chair < CHAIRS_PER_TABLE; chair++){
-            int id = shm_ptr->tables[table].chairs[chair].occupied_by_pid;
-            printf("Process ID: %d\n", id);
-        }
+   int found_table = -1, found_chair = -1;
+    while (!check_for_chair(shm_ptr, &found_table, &found_chair)) {
+        printf("Visitor %d: No chair found. Waiting...\n", getpid());
+        sleep(2); // Wait before retrying
     }
 
-    printf("%d\n", check_for_chair(shm_ptr));
+    printf("Visitor %d: Seated at table %d, chair %d.\n", getpid(), found_table, found_chair);
+
+    printf("Visitor %d: Resting for %d seconds...\n", getpid(), resttime);
+    sleep(resttime);
+
+    shm_ptr->tables[found_table].chairs[found_chair].occupied_by_pid = 0;
+    printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
+
+    munmap(shm_ptr, SHM_SIZE);
 
 }
