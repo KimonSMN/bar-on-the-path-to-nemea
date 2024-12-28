@@ -91,6 +91,8 @@ int main(int argc, char* argv[]){
     VisitorOrder order = {0};
 
     srand(time(NULL) + getpid());
+    
+    clock_t order_time = clock();
 
     int get_both, option;
     get_both = rand() % 2;
@@ -110,9 +112,12 @@ int main(int argc, char* argv[]){
     order.orders[CHEESE] = rand() % 2;  // Get Cheese
     order.orders[SALAD] = rand() % 2;   // Get Salad
 
-    printf("Visitor %d ordered: Water=%d, Wine=%d, Cheese=%d, Salad=%d\n",
+    order_time = clock();
+
+    printf("Visitor %d ordered: Water=%d, Wine=%d, Cheese=%d, Salad=%d, Order time:%ld\n",
        getpid(), order.orders[WATER], order.orders[WINE], 
-       order.orders[CHEESE], order.orders[SALAD]);
+       order.orders[CHEESE], order.orders[SALAD], order_time);
+
 
 
     // Visitor leaves after resttime
