@@ -13,25 +13,33 @@
 
 int check_for_chair(SharedMemory* shm_ptr, int* found_table, int* found_chair) {
     for (int table = 0; table < NUM_TABLES; table++) {
+        sem_wait(&shm_ptr->table_sems[table]); // Lock specific table semaphore
+
         if (shm_ptr->tables[table].blocked && shm_ptr->tables[table].num_occupied > 0) {
+            sem_post(&shm_ptr->table_sems[table]); // Unlock before skipping
             continue; // Skip blocked tables
         }
+
         for (int chair = 0; chair < CHAIRS_PER_TABLE; chair++) {
             if (shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0) {
                 shm_ptr->tables[table].chairs[chair].occupied_by_pid = getpid(); // Occupy chair
                 shm_ptr->tables[table].num_occupied++;
                 if (shm_ptr->tables[table].num_occupied == CHAIRS_PER_TABLE) {
-                    shm_ptr->tables[table].blocked = true; // Block the table
+                    shm_ptr->tables[table].blocked = true; // Block table if fully occupied
                 }
-                // shm_ptr->total_visitors++;
                 *found_table = table;
                 *found_chair = chair;
+
+                sem_post(&shm_ptr->table_sems[table]); // Unlock table semaphore
                 return 1; // Chair found
             }
         }
+
+        sem_post(&shm_ptr->table_sems[table]); // Unlock table semaphore
     }
     return 0; // No chair found
 }
+
 int main(int argc, char* argv[]){
 
   //////// HANDLE COMMAND LINE ARGUMENTS ////////
@@ -116,15 +124,18 @@ int main(int argc, char* argv[]){
     printf("Visitor %d: Resting for %d seconds...\n", getpid(), resttime);
     sleep(resttime);
 
+    sem_wait(&shm_ptr->table_sems[found_table]);
+
     shm_ptr->tables[found_table].chairs[found_chair].occupied_by_pid = 0; // Free chair
     shm_ptr->tables[found_table].num_occupied--;
 
     if (shm_ptr->tables[found_table].num_occupied == 0) {
         shm_ptr->tables[found_table].blocked = false; // Unblock the table
     }    
+
+    sem_post(&shm_ptr->table_sems[found_table]);
+
     printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
 
     munmap(shm_ptr, SHM_SIZE);
-
-
 }

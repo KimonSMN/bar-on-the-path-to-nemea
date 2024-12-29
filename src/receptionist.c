@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "shared_memory.h"
+#include <semaphore.h>
 
 #define SHM_SIZE sizeof(SharedMemory)
 
@@ -56,6 +57,20 @@ int main(int argc, char* argv[]) {
 
     // Initialize shared memory
     memset(shm_ptr, 0, SHM_SIZE);
+
+    if (sem_init(&shm_ptr->shm_mutex, 1, 1) == -1) { // Shared between processes
+        perror("sem_init failed for shm_mutex");
+        exit(1);
+    }
+
+    // Initialize per-table semaphores
+    for (int i = 0; i < NUM_TABLES; i++) {
+        if (sem_init(&shm_ptr->table_sems[i], 1, 1) == -1) { // Shared between processes
+            perror("sem_init failed for table_sems");
+            exit(1);
+        }
+    }
+
 
     return 0;
 }

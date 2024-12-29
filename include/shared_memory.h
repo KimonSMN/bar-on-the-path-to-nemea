@@ -25,7 +25,8 @@ typedef struct {
     Table tables[NUM_TABLES];  // Array of tables
     int total_visitors;        // Total number of visitors so far
     int product_stats[NUM_MENU_ITEMS]; // Total consumption of each menu item
-
+    sem_t shm_mutex;               // Semaphore for shared memory access
+    sem_t table_sems[NUM_TABLES];  // Array of semaphores for table-level synchronization
 } SharedMemory;
 
 typedef enum {
