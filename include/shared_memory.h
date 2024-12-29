@@ -16,7 +16,7 @@ typedef struct{
 } Chair;
 
 typedef struct{
-    // bool is_active;
+    bool blocked;
     int num_occupied;
     Chair chairs[CHAIRS_PER_TABLE]; // array of Chairs
 } Table;

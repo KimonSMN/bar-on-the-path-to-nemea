@@ -13,10 +13,17 @@
 
 int check_for_chair(SharedMemory* shm_ptr, int* found_table, int* found_chair) {
     for (int table = 0; table < NUM_TABLES; table++) {
+        if (shm_ptr->tables[table].blocked && shm_ptr->tables[table].num_occupied > 0) {
+            continue; // Skip blocked tables
+        }
         for (int chair = 0; chair < CHAIRS_PER_TABLE; chair++) {
             if (shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0) {
                 shm_ptr->tables[table].chairs[chair].occupied_by_pid = getpid(); // Occupy chair
-                shm_ptr->total_visitors++;
+                shm_ptr->tables[table].num_occupied++;
+                if (shm_ptr->tables[table].num_occupied == CHAIRS_PER_TABLE) {
+                    shm_ptr->tables[table].blocked = true; // Block the table
+                }
+                // shm_ptr->total_visitors++;
                 *found_table = table;
                 *found_chair = chair;
                 return 1; // Chair found
@@ -65,19 +72,6 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    // printf("resttime: %d\n", resttime);
-    // printf("shmid: %s\n", shmid);
-
-    // Check if there is empty chair at table
-    // prints the tables
-    // for (int table = 0; table < NUM_TABLES; table++){
-    //     printf("Table %d: \n", table);
-    //     for(int chair = 0; chair < CHAIRS_PER_TABLE; chair++){
-    //         printf("Chair %d: ", chair);
-    //         printf("Process ID: %d\n", shm_ptr->tables[table].chairs[chair].occupied_by_pid);
-    //     }
-    // }
-
    int found_table = -1, found_chair = -1;
     while (!check_for_chair(shm_ptr, &found_table, &found_chair)) {
         printf("Visitor %d: No chair found. Waiting...\n", getpid());
@@ -118,15 +112,19 @@ int main(int argc, char* argv[]){
        getpid(), order.orders[WATER], order.orders[WINE], 
        order.orders[CHEESE], order.orders[SALAD], order_time);
 
-
-
     // Visitor leaves after resttime
     printf("Visitor %d: Resting for %d seconds...\n", getpid(), resttime);
     sleep(resttime);
 
-    shm_ptr->tables[found_table].chairs[found_chair].occupied_by_pid = 0;
+    shm_ptr->tables[found_table].chairs[found_chair].occupied_by_pid = 0; // Free chair
+    shm_ptr->tables[found_table].num_occupied--;
+
+    if (shm_ptr->tables[found_table].num_occupied == 0) {
+        shm_ptr->tables[found_table].blocked = false; // Unblock the table
+    }    
     printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
 
     munmap(shm_ptr, SHM_SIZE);
+
 
 }

@@ -44,6 +44,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    for (int table = 0; table < NUM_TABLES; table++) {
+        shm_ptr->tables[table].blocked = false;
+        shm_ptr->tables[table].num_occupied = 0;
+        for (int chair = 0; chair < CHAIRS_PER_TABLE; chair++) {
+            shm_ptr->tables[table].chairs[chair].occupied_by_pid = 0;
+        }
+    }
+
     printf("Shared memory initialized with name: %s\n", shmid);
 
     // Initialize shared memory
