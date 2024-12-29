@@ -71,6 +71,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    if (sem_init(&shm_ptr->logging, 1, 1) == -1) {
+        perror("sem_init failed for logging semaphore");
+        exit(1);
+    }
+
 
     return 0;
 }

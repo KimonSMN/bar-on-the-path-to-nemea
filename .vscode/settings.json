@@ -5,6 +5,7 @@
     "mman.h": "c",
     "stdlib.h": "c",
     "semaphore.h": "c",
-    "shared_memory.h": "c"
+    "shared_memory.h": "c",
+    "fcntl.h": "c"
   }
 }

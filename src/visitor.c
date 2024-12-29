@@ -27,6 +27,7 @@ int check_for_chair(SharedMemory* shm_ptr, int* found_table, int* found_chair) {
                 if (shm_ptr->tables[table].num_occupied == CHAIRS_PER_TABLE) {
                     shm_ptr->tables[table].blocked = true; // Block table if fully occupied
                 }
+                shm_ptr->total_visitors++;
                 *found_table = table;
                 *found_chair = chair;
 
@@ -114,6 +115,12 @@ int main(int argc, char* argv[]){
     order.orders[CHEESE] = rand() % 2;  // Get Cheese
     order.orders[SALAD] = rand() % 2;   // Get Salad
 
+    sem_wait(&shm_ptr->logging); // Lock shared memory semaphore
+    for (int i = 0; i < NUM_MENU_ITEMS; i++) {
+        shm_ptr->product_stats[i] += order.orders[i]; // Update consumption for each item
+    }
+    sem_post(&shm_ptr->logging); // Unlock shared memory semaphore
+
     order_time = clock();
 
     printf("Visitor %d ordered: Water=%d, Wine=%d, Cheese=%d, Salad=%d, Order time:%ld\n",
@@ -133,6 +140,13 @@ int main(int argc, char* argv[]){
         shm_ptr->tables[found_table].blocked = false; // Unblock the table
     }    
 
+    // printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
+
+    // sem_t mutex;            // Mutex for shared memory
+    // sem_t sit;              // Semaphore for tables
+    // sem_t order;            // Semaphore for ordering
+    // sem_t wakeup;           // Semaphore to wake up receptionist
+    // sem_t log;              // Semaphore for logging
     sem_post(&shm_ptr->table_sems[found_table]);
 
     printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
