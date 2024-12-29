@@ -30,6 +30,7 @@ int check_for_chair(SharedMemory* shm_ptr, int* found_table, int* found_chair) {
                 shm_ptr->total_visitors++;
                 *found_table = table;
                 *found_chair = chair;
+                sem_post(&shm_ptr->wakeup); // Notify receptionist
 
                 sem_post(&shm_ptr->table_sems[table]); // Unlock table semaphore
                 return 1; // Chair found

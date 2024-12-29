@@ -6,6 +6,9 @@
     "stdlib.h": "c",
     "semaphore.h": "c",
     "shared_memory.h": "c",
-    "fcntl.h": "c"
+    "fcntl.h": "c",
+    "stdio.h": "c",
+    "string.h": "c",
+    "time.h": "c"
   }
 }

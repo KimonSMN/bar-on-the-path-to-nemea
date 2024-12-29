@@ -7,8 +7,8 @@
 // sem_t mutex;
 
 // Bar Constants
-#define NUM_TABLES 1
-#define CHAIRS_PER_TABLE 2
+#define NUM_TABLES 3
+#define CHAIRS_PER_TABLE 4
 #define NUM_MENU_ITEMS 4
 
 typedef struct{
@@ -28,6 +28,8 @@ typedef struct {
     sem_t shm_mutex;               // Semaphore for shared memory access
     sem_t logging;
     sem_t table_sems[NUM_TABLES];  // Array of semaphores for table-level synchronization
+    sem_t wakeup;           // Semaphore to wake up receptionist
+
 } SharedMemory;
 
 typedef enum {
