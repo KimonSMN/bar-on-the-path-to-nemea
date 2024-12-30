@@ -7,6 +7,7 @@
 #include <signal.h>
 #include "shared_memory.h"
 #include <semaphore.h>
+#include <time.h>
 
 #define SHM_NAME "/shared_memory"
 #define SHM_SIZE sizeof(SharedMemory)
@@ -60,6 +61,7 @@ void handle_signal(int sig) {
 
 int main(int argc, char* argv[]) {
     int ordertime = 0;
+    int open_hours = 0;
     char* shmid = NULL;
 
     // Parse arguments
@@ -68,6 +70,8 @@ int main(int argc, char* argv[]) {
             ordertime = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-s") == 0) {
             shmid = argv[++i];
+        } else if (strcmp(argv[i], "-o") == 0){
+            open_hours = atoi(argv[++i]);
         }
     }
 
@@ -133,13 +137,16 @@ int main(int argc, char* argv[]) {
         cleanup(shmid);
     }
 
-    // Simulate receptionist work
-    // while (1) {
-    //     printf("Receptionist working... Sleeping for %d seconds.\n", ordertime);
-    //     sleep(ordertime);
-    // }
+    time_t start_time = time(NULL);
 
     while (1) {
+        time_t elapsed_time = time(NULL) - start_time;
+        printf("Elapsed time: %ld\n", elapsed_time);
+
+        if (elapsed_time >= open_hours) {
+            printf("Open hours have ended. Closing receptionist.\n");
+            cleanup(shmid);
+        }
         printf("Receptionist is waiting for visitors...\n");
         sem_wait(&shm_ptr->wakeup); // Wait for a visitor to wake up the receptionist
 

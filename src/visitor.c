@@ -143,11 +143,6 @@ int main(int argc, char* argv[]){
 
     // printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
 
-    // sem_t mutex;            // Mutex for shared memory
-    // sem_t sit;              // Semaphore for tables
-    // sem_t order;            // Semaphore for ordering
-    // sem_t wakeup;           // Semaphore to wake up receptionist
-    // sem_t log;              // Semaphore for logging
     sem_post(&shm_ptr->table_sems[found_table]);
 
     printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);

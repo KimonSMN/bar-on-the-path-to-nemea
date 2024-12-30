@@ -29,7 +29,6 @@ typedef struct {
     sem_t logging;
     sem_t table_sems[NUM_TABLES];  // Array of semaphores for table-level synchronization
     sem_t wakeup;           // Semaphore to wake up receptionist
-
 } SharedMemory;
 
 typedef enum {
