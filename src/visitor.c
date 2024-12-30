@@ -8,46 +8,48 @@
 
 #include "shared_memory.h"
 
-#define SHM_NAME "/shared_memory"
+#define SHM_NAME "/shared_memory"   
 #define SHM_SIZE sizeof(SharedMemory)
 
-int check_for_chair(SharedMemory* shm_ptr, int* found_table, int* found_chair) {
+// Function to check and possibly occupy a chair by a visitor.
+int check_for_chair(SharedMemory* shm_ptr, int* found_table, int* found_chair) {   
     for (int table = 0; table < NUM_TABLES; table++) {
-        sem_wait(&shm_ptr->table_sems[table]); // Lock specific table semaphore
+        sem_wait(&shm_ptr->table_sems[table]); // Lock table semaphore.
 
         if (shm_ptr->tables[table].blocked && shm_ptr->tables[table].num_occupied > 0) {
-            sem_post(&shm_ptr->table_sems[table]); // Unlock before skipping
-            continue; // Skip blocked tables
+            sem_post(&shm_ptr->table_sems[table]); // Unlock before skipping.
+            continue; // Skip blocked tables.
         }
 
         for (int chair = 0; chair < CHAIRS_PER_TABLE; chair++) {
-            if (shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0) {
-                shm_ptr->tables[table].chairs[chair].occupied_by_pid = getpid(); // Occupy chair
-                shm_ptr->tables[table].num_occupied++;
-                if (shm_ptr->tables[table].num_occupied == CHAIRS_PER_TABLE) {
-                    shm_ptr->tables[table].blocked = true; // Block table if fully occupied
+            if (shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0) {     // If chair is empty. (occupied_by_pid == 0)
+                shm_ptr->tables[table].chairs[chair].occupied_by_pid = getpid(); // Set chair pid to visitor pid.
+                shm_ptr->tables[table].num_occupied++;                           // Increment the number of chairs per tables that are occupied currently.
+                if (shm_ptr->tables[table].num_occupied == CHAIRS_PER_TABLE) {   // If all the chairs are occupied, block the table.
+                    shm_ptr->tables[table].blocked = true;  // Table blocked.
                 }
-                shm_ptr->total_visitors++;
-                *found_table = table;
-                *found_chair = chair;
-                sem_post(&shm_ptr->wakeup); // Notify receptionist
+                shm_ptr->total_visitors++;  // Increment the total visitors counter.
+                *found_table = table;       // Save table &
+                *found_chair = chair;       // Chair for future use.
+                sem_post(&shm_ptr->wakeup); // Wake up receptionist.
 
-                sem_post(&shm_ptr->table_sems[table]); // Unlock table semaphore
-                return 1; // Chair found
+                sem_post(&shm_ptr->table_sems[table]); // Unlock table semaphore.
+                return 1; // Chair found.
             }
         }
 
-        sem_post(&shm_ptr->table_sems[table]); // Unlock table semaphore
+        sem_post(&shm_ptr->table_sems[table]); // Unlock table semaphore.
     }
-    return 0; // No chair found
+    return 0; // Chair not found.
 }
 
 int main(int argc, char* argv[]){
 
   //////// HANDLE COMMAND LINE ARGUMENTS ////////
-    int resttime;   // παρέχει την μέγιστη δυνατή περίοδο στην οποία ο επισκέπτης παραμένει στο τραπέζι αφότου έχει εξυπηρετηθεί από τον υπεύθυνο (σε κατάσταση sleep).
-    char* shmid = NULL;      // δίνει το κλειδί που το κοινό τμήμα μνήμης έχει (και όπου υπάρχουν αντικείμενα κοινού ενδιαφέροντος).
+    int resttime;           // Max time a visitor will stay(rest) at a table (sleep).
+    char* shmid = NULL;     // Shared memory key.
 
+    // Parse the flags.
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-d") == 0) {
             resttime = atoi(argv[++i]);
@@ -59,17 +61,12 @@ int main(int argc, char* argv[]){
         }
     }
 
-    if(argc == 1){
-        printf("Please provide -d & -s flags\n");
-        return 0;
+    // Error checking.
+    if (!shmid || resttime <= 0) {
+        printf("Usage: ./visitor [OPTION]\n\t-d resttime\tMax time a visitor will rest (seconds).\n\t-s shmid\tShared memory key.\n");
+        return 1;
     }
 
-    // if (!shmid || resttime <= 0) {
-    //     printf("Usage: ./visitor -d resttime -s shmid\n");
-    //     return 1;
-    // }
-
-    // Attach to shared memory
     int shm_fd = shm_open(shmid, O_RDWR, 0666);
     if (shm_fd == -1) {
         perror("shm_open failed");
@@ -82,33 +79,45 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-   int found_table = -1, found_chair = -1;
+    clock_t start_wait_time, end_wait_time;
+    int padding = 0;
+    int found_table = -1, found_chair = -1;
+    start_wait_time = clock();
     while (!check_for_chair(shm_ptr, &found_table, &found_chair)) {
         printf("Visitor %d: No chair found. Waiting...\n", getpid());
-        sleep(2); // Wait before retrying
+        sleep(2);
+        padding += 2;   // Added a padding to add on the wait calculation for +2 seconds because of the sleep function.
     }
+    end_wait_time = clock();
+    double wait_time_in_seconds = padding + ((double) (end_wait_time - start_wait_time)) / CLOCKS_PER_SEC;
 
-    printf("Visitor %d: Seated at table %d, chair %d.\n", getpid(), found_table, found_chair);
+    sem_wait(&shm_ptr->logging); // Lock logging semaphore.
+    shm_ptr->avg_wait_time += wait_time_in_seconds;
+    sem_post(&shm_ptr->logging); // Unlock logging semaphore.
 
-    // Orders from the menu
-
-    VisitorOrder order = {0};
-
-    srand(time(NULL) + getpid());
+    printf("Visitor %d: Seated at table %d, chair %d. It took: %f\n", getpid(), found_table, found_chair, wait_time_in_seconds);
     
-    clock_t order_time = clock();
+    srand(time(NULL) + getpid());   
 
+    //======================================Debugging============================================================//
+    // Initalize clocks to measure average order time.
+    // clock_t start_order_time, end_order_time;
+    // start_order_time = clock(); // Start of order_time. 
+    //===========================================================================================================//
+
+    // Visitor's Order.
+    VisitorOrder order = {0};
     int get_both, option;
     get_both = rand() % 2;
-    if(get_both == 1){ // Get both
+    if(get_both == 1){  // Get both
         order.orders[WATER] = 1;
         order.orders[WINE] = 1;
-    } else{ // Don't get both
+    } else{             // Don't get both
         option = rand() % 2;
         if(option == 1){ // Get Water
             order.orders[WATER] = 1;
             order.orders[WINE] = 0;
-        } else{ // Get Wine
+        } else{          // Get Wine
             order.orders[WATER] = 0;
             order.orders[WINE] = 1;
         } 
@@ -116,22 +125,31 @@ int main(int argc, char* argv[]){
     order.orders[CHEESE] = rand() % 2;  // Get Cheese
     order.orders[SALAD] = rand() % 2;   // Get Salad
 
-    sem_wait(&shm_ptr->logging); // Lock shared memory semaphore
+    // Logging orders to shared memory.
+    sem_wait(&shm_ptr->logging); // Lock semaphore for logging.
     for (int i = 0; i < NUM_MENU_ITEMS; i++) {
-        shm_ptr->product_stats[i] += order.orders[i]; // Update consumption for each item
+        shm_ptr->product_stats[i] += order.orders[i]; // Update product stats for each item.
     }
-    sem_post(&shm_ptr->logging); // Unlock shared memory semaphore
+    shm_ptr->order_count++;
+    sem_post(&shm_ptr->logging); // Unlock semaphore for logging.
 
-    order_time = clock();
-
-    printf("Visitor %d ordered: Water=%d, Wine=%d, Cheese=%d, Salad=%d, Order time:%ld\n",
-       getpid(), order.orders[WATER], order.orders[WINE], 
-       order.orders[CHEESE], order.orders[SALAD], order_time);
-
-    // Visitor leaves after resttime
-    printf("Visitor %d: Resting for %d seconds...\n", getpid(), resttime);
+    //======================================Debugging============================================================//
+    // end_order_time = clock(); // End of order_time.  // Debugging.
+    // double time_in_seconds = ((double) (end_order_time - start_order_time)) / CLOCKS_PER_SEC; // Debugging.
+    // printf("Visitor %d: Ordered: Water=%d, Wine=%d, Cheese=%d, Salad=%d, Order time:%f\n",  // Debugging.
+    //    getpid(), order.orders[WATER], order.orders[WINE], 
+    //    order.orders[CHEESE], order.orders[SALAD], time_in_seconds);
+    // printf("Visitor %d: Resting for %d seconds...\n", getpid(), resttime);   // Debugging.
+    //===========================================================================================================//
+    // Visitor rests.
     sleep(resttime);
 
+    // Updating average resttime.
+    sem_wait(&shm_ptr->logging); // Lock logging semaphore.
+    shm_ptr->avg_rest_time += resttime;
+    sem_post(&shm_ptr->logging); // Unlock logging semaphore.
+
+    // Visitor leaves table.
     sem_wait(&shm_ptr->table_sems[found_table]);
 
     shm_ptr->tables[found_table].chairs[found_chair].occupied_by_pid = 0; // Free chair
@@ -141,11 +159,10 @@ int main(int argc, char* argv[]){
         shm_ptr->tables[found_table].blocked = false; // Unblock the table
     }    
 
-    // printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
-
     sem_post(&shm_ptr->table_sems[found_table]);
 
-    printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);
+    printf("Visitor %d: Left table %d, chair %d.\n", getpid(), found_table, found_chair);   // Debugging.
 
-    munmap(shm_ptr, SHM_SIZE);
+    // Unmap shared memory.
+    munmap(shm_ptr, SHM_SIZE);  
 }

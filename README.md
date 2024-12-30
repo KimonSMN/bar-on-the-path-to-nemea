@@ -1,105 +1,18 @@
-1. Επισκέπτες (Visitors)
+Structure of project:
 
-   1. Άφιξη και αναμονή:
+1. An additional flag, -o open_hours, has been added to the ./receptionist program. Despite being named "hours," this flag takes an input in seconds.
 
-       ✅- Ελέγχουν αν υπάρχει διαθέσιμη καρέκλα σε κάποιο τραπέζι.
-       ✅- Αν όχι, περιμένουν μέχρι ένα τραπέζι να αδειάσει πλήρως.
-       ✅- Ακολουθούν την πολιτική τοποθέτησης (μέχρι 4 επισκέπτες ανά τραπέζι).
+   - This flag determines how long the shop remains open for visitors. During this period, visitors are allowed to enter the shop and place their orders.
 
-   2. Προετοιμασία παραγγελίας:
+2. After the specified time (open_hours) has elapsed, the shop closes:
 
-      - Μεταβαίνουν στο τραπέζι εξυπηρέτησης για παραγγελία.
-       ✅- Παραγγέλνουν:
-         ✅- Ένα από τα δύο: κρασί ή νερό (υποχρεωτικό).
-         ✅- Τυρί και/ή σαλάτα (προαιρετικά, με τυχαία επιλογή).
-       ✅- Καταγράφουν τον χρόνο παραγγελίας.
+   - No new visitors are allowed to enter or place orders.
+   - Visitors already inside the shop will continue their activities (resting) and leave only after they are finished.
 
-   3. Κατανάλωση και αλληλεπίδραση:
+3. If the shop remains open (open_hours is not yet over) but no new visitors arrive, the shop will wait until another visitor enters to close properly.
+   - However, if the day is slow, and no visitors come, the shop can also be closed early by manually interrupting it with Ctrl + C.
 
-      ✅- Μεταβαίνουν στο τραπέζι και αρχίζουν:
-      ✅  - Να τρώνε/πίνουν (μεμονωμένες ενέργειες).
-      ✅  - Να συνομιλούν με τους υπόλοιπους στο τραπέζι.
-      - Η παραμονή στο τραπέζι διαρκεί τυχαίο χρονικό διάστημα στο εύρος [0.70 ∗ trest .. trest].
+4. Visitors will attempt to occupy a chair. If an empty chair is available, they will take a seat and place their order. If no chair is available, they will wait by sleeping for 2 seconds before trying again. 
+This waiting time, including the sleep duration, is included in the final average wait time calculation by the receptionist at the end of the day.
 
-   4. Αναχώρηση:
-      - Καταγράφουν τον χρόνο παραμονής και τα προϊόντα που κατανάλωσαν.
-      - Ενημερώνουν τη shared memory για στατιστικά κατανάλωσης και χρόνο επίσκεψης.
-      - Ελευθερώνουν την καρέκλα χωρίς να γίνεται διαθέσιμη μέχρι να αδειάσει πλήρως το τραπέζι.
 
-2. Υπεύθυνος Υποδοχής (Receptionist)
-
-   1. Παραγγελία και εξυπηρέτηση:
-      - Παίρνει παραγγελίες FIFO.
-      - Εξυπηρετεί έναν επισκέπτη τη φορά.
-      - Η διάρκεια εξυπηρέτησης είναι τυχαία εντός [0.50 ∗ torder .. torder].
-   2. Καταγραφή στατιστικών:
-
-      - Ενημερώνει τη shared memory για:
-        - Αριθμό επισκεπτών που εξυπηρετήθηκαν.
-        - Συνολική κατανάλωση προϊόντων.
-      - Υπολογίζει μέσο χρόνο επίσκεψης.
-
-   3. Λειτουργία και τερματισμός:
-      - Συνεχίζει τη λειτουργία για καθορισμένη χρονική περίοδο.
-      - Καταγράφει την τελική κατάσταση και στατιστικά.
-
-3. Κοινή Μνήμη (Shared Memory)
-
-   1. Δομή δεδομένων:
-      - Κατάσταση τραπεζιών:
-        - Πίνακες από process IDs για τους ενεργούς επισκέπτες.
-        - Ενδείξεις διαθεσιμότητας καρεκλών και τραπεζιών.
-      - Κατανάλωση προϊόντων:
-        - Συνολική κατανάλωση νερού, κρασιού, τυριού και σαλάτας.
-      - Χρόνοι και αριθμοί επισκεπτών:
-        - Συνολικός αριθμός επισκεπτών.
-        - Μέσος χρόνος παραμονής.
-        - Ενέργειες σε εξέλιξη.
-   2. Συγχρονισμός:
-      - Χρήση semaphores για διαχείριση πρόσβασης στη shared memory.
-      - Σήματα P() και V() για αποφυγή conflicts.
-
-4. Παρακολούθηση (Monitor)
-
-   1. Παρουσίαση δεδομένων:
-
-      - Διαθέσιμες καρέκλες και τραπέζια.
-      - Επισκέπτες σε εξέλιξη.
-      - Κατανάλωση προϊόντων μέχρι στιγμής.
-
-   2. Ενημέρωση σε πραγματικό χρόνο:
-      - Αλληλεπίδραση με τη shared memory για συνεχή ενημέρωση.
-      - Παροχή δεδομένων μέσω τερματικών.
-
-5. Ιστορικότητα (Logging)
-
-   1. Καταγραφή γεγονότων:
-
-      - Άφιξη επισκεπτών.
-      - Λεπτομέρειες παραγγελίας.
-      - Χρόνος παραμονής και κατανάλωση προϊόντων.
-      - Αναχωρήσεις.
-
-   2. Παραγωγή στατιστικών:
-      - Αριθμός επισκεπτών και κατανάλωση προϊόντων.
-      - Μέσος χρόνος παραμονής.
-
-6. Υλοποίηση και Δοκιμές
-
-   1. Χρήση POSIX Semaphores:
-
-      - Για συγχρονισμό μεταξύ διεργασιών.
-      - Αποφυγή κατάστασης λιμού.
-
-   2. Shared Memory Segment:
-
-      - Δημιουργία, πρόσβαση και ενημέρωση από όλες τις διεργασίες.
-
-   3. Τυχαίος χρόνος και ενέργειες:
-
-      - Χρήση sleep() για προσωμοίωση τυχαίων χρόνων.
-      - Διασφάλιση ότι οι χρόνοι είναι εντός καθορισμένων ορίων.
-
-   4. Τελική παρουσίαση:
-      - Εκτύπωση στατιστικών στο τέλος λειτουργίας.
-      - Ορθή παράλληλη εκτέλεση από διαφορετικά τερματικά.

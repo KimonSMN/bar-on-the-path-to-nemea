@@ -11,24 +11,27 @@
 #define SHM_SIZE sizeof(SharedMemory)
 
 void display_bar_state(SharedMemory* shm_ptr) {
-    printf("=== Bar State ===\n");
+    printf("=== Current state of Bar ===\n");
     for (int table = 0; table < NUM_TABLES; table++) {
-        printf("Table %d: %s\n", table, shm_ptr->tables[table].blocked ? "Blocked" : "Unblocked");
+        if(shm_ptr->tables[table].blocked){
+            printf("Table %d: Blocked\n", table);
+        } else{
+            printf("Table %d: Unblocked\n", table);
+        }
         printf("  Chairs:\n");
         for (int chair = 0; chair < CHAIRS_PER_TABLE; chair++) {
             if (shm_ptr->tables[table].chairs[chair].occupied_by_pid == 0) {
-                printf("    Chair %d: Unoccupied\n", chair);
+                printf("\tChair %d: Unoccupied\n", chair);
             } else {
-                printf("    Chair %d: Occupied by PID %d\n", chair,
-                       shm_ptr->tables[table].chairs[chair].occupied_by_pid);
+                printf("\tChair %d: Occupied by PID %d\n", chair, shm_ptr->tables[table].chairs[chair].occupied_by_pid);
             }
         }
     }
-    printf("\n=== TOTAL VISITORS ===\n");
+    printf("\n=== Total Visitors ===\n");
     printf("Visitors: %d\n",shm_ptr->total_visitors);
 
 
-    printf("\n=== Product Consumption ===\n");
+    printf("\n=== Products Consumed ===\n");
     printf("Water: %d\n", shm_ptr->product_stats[WATER]);
     printf("Wine: %d\n", shm_ptr->product_stats[WINE]);
     printf("Cheese: %d\n", shm_ptr->product_stats[CHEESE]);
@@ -38,25 +41,21 @@ void display_bar_state(SharedMemory* shm_ptr) {
 int main(int argc, char* argv[]) {
     char* shmid = NULL;
 
-    // Parse arguments
+    // Parse flags.
     if (strcmp(argv[1], "-s") == 0) {
         shmid = argv[2];
     }
     
     int shm_fd = shm_open(shmid, O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open failed");
+    if (shm_fd == -1) { // Error checking.
         return 1;
     }
 
     SharedMemory* shm_ptr = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shm_ptr == MAP_FAILED) {
-        perror("mmap failed");
+    if (shm_ptr == MAP_FAILED) { // Error checking.
         return 1;
     }
 
     display_bar_state(shm_ptr);
-
-
     return 0;
 }
